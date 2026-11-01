@@ -38,6 +38,11 @@ export type EmailLink = {
   href: string;
 };
 
+function newsletterDateTimestamp(date: string) {
+  const timestamp = Date.parse(date.replace(/(\d{1,2})(st|nd|rd|th)\b/gi, "$1"));
+  return Number.isNaN(timestamp) ? Number.MIN_SAFE_INTEGER : timestamp;
+}
+
 export function NewsletterCarousel({ emails }: { emails: EmailDoc[] }) {
   const [showAllNewsletters, setShowAllNewsletters] = useState(false);
   const [selectedNewsletter, setSelectedNewsletter] =
@@ -53,7 +58,9 @@ export function NewsletterCarousel({ emails }: { emails: EmailDoc[] }) {
       highlights: card.sections.slice(0, 2),
       content: card.sections.slice(2),
     };
-  });
+  }).sort(
+    (a, b) => newsletterDateTimestamp(b.date) - newsletterDateTimestamp(a.date),
+  );
   const displayedNewsletters = showAllNewsletters
     ? newsletters
     : newsletters.slice(0, 3);

@@ -5,7 +5,6 @@ import {
   Lightbulb,
   PartyPopper,
 } from "lucide-react";
-import { adminDb } from "@/lib/firebase-admin";
 import { NewsletterCarousel } from "./components/newsletter-carousel";
 import { NewsletterSubscribe } from "./components/newsletter-subscribe-dialog";
 import { SubteamCategorySection } from "./components/subteam-section";
@@ -29,25 +28,48 @@ export type EmailDoc = {
 };
 
 async function getEmails() {
-  const snapshot = await adminDb
-    .collection("mailgunEmails")
-    .orderBy("receivedAt", "desc")
-    .limit(25)
-    .get();
+  const apiUrl = process.env.MAILGUN_ROUTE_API_URL;
+  const apiKey = process.env.MAILGUN_ROUTE_API_KEY;
 
-  return snapshot.docs.map((doc) => {
-    const data = doc.data();
+  if (!apiUrl || !apiKey) {
+    throw new Error(
+      "Missing MAILGUN_ROUTE_API_URL or MAILGUN_ROUTE_API_KEY environment variable",
+    );
+  }
 
-    return {
-      id: doc.id,
-      sender: String(data.sender ?? ""),
-      recipient: String(data.recipient ?? ""),
-      subject: String(data.subject ?? ""),
-      strippedHtml: String(data.strippedHtml ?? ""),
-      strippedText: String(data.strippedText ?? ""),
-      source: String(data.source ?? ""),
-    } satisfies EmailDoc;
+  const response = await fetch(apiUrl, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      Accept: "application/json",
+    },
+    cache: "no-store",
   });
+
+  if (!response.ok) {
+    throw new Error(`Email API returned ${response.status}`);
+  }
+
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    const finalUrl = new URL(response.url);
+    throw new Error(
+      `Email API expected JSON but returned ${contentType || "an unknown content type"} ` +
+        `(status ${response.status}, redirected: ${response.redirected}, ` +
+        `destination: ${finalUrl.origin}${finalUrl.pathname}). ` +
+        "Check the endpoint URL and deployment access settings.",
+    );
+  }
+
+  const mailgun_emails = await response.json();
+  return mailgun_emails.emails.map((email: Partial<EmailDoc>) => ({
+    id: String(email.id ?? ""),
+    sender: String(email.sender ?? ""),
+    recipient: String(email.recipient ?? ""),
+    subject: String(email.subject ?? ""),
+    strippedHtml: String(email.strippedHtml ?? ""),
+    strippedText: String(email.strippedText ?? ""),
+    source: String(email.source ?? ""),
+  }));
 }
 
 export const scroll = (
