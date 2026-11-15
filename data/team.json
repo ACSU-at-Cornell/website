@@ -497,6 +497,17 @@
     },
     {
       "id": 46,
+      "name": "Mindi Hu",
+      "position": "Web Dev Officer",
+      "department": "Web Dev",
+      "year": 2029,
+      "position_type": null,
+      "image": "/2025-2026/web/Mindi_Hu.jpeg",
+      "email": "mh2637@cornell.edu",
+      "linkedin": "https://linkedin.com/in/mindihu/"
+    },
+    {
+      "id": 47,
       "name": "Clarkson",
       "position": "Faculty Advisor",
       "department": "Faculty",
